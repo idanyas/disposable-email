@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Prepare gitignore for temp files
+      - name: Ignore temp files
         run: |
           echo "sources/" >> .gitignore
           echo "email_blocklist.txt" >> .gitignore
@@ -36,11 +36,11 @@ jobs:
         run: |
           sort -u email_blocklist.txt > disposable_email.txt
 
-      - name: Commit changes (if any)
+      - name: Commit changes if any
         run: |
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add -A
+          git add disposable_email.txt
           git diff --cached --quiet || git commit -m "chore: merge disposable email"
 
       - name: Push changes
