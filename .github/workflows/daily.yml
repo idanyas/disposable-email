@@ -42,6 +42,7 @@ jobs:
         git config --local user.name "github-actions[bot]"
         git add disposable_email_domains_blocklist.txt
         git commit -m 'Daily merge of disposable email sources'
+        git pull --rebase origin main
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
