@@ -3,43 +3,46 @@ name: Merge Disposable Email Blocklist
 on:
   schedule:
     - cron: '0 0 * * *'
-  workflow_dispatch: 
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   main:
     runs-on: ubuntu-latest
-    permissions:                
-      contents: write           
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Download domains list
-      run: |
-        mkdir sources
-        curl -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
-        curl -o sources/disposable_email_blocklist.txt https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf
-        curl -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt
-        curl -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt
+      - name: Prepare gitignore for temp files
+        run: |
+          echo "sources/" >> .gitignore
+          echo "email_blocklist.txt" >> .gitignore
 
-    - name: Merge files
-      run: |
-        cat sources/*.txt > email_blocklist.txt
-  
-    - name: Remove duplicate lines
-      run: |
-        sort email_blocklist.txt | uniq > disposable_email.txt
+      - name: Download domains list
+        run: |
+          mkdir -p sources
+          curl -L -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
+          curl -L -o sources/disposable_email_blocklist.txt https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf
+          curl -L -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt
+          curl -L -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt
 
-    - name: Commit changes
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add disposable_email.txt
-        git commit -m 'chore: merge disposable email' || echo "No changes to commit"
-    - name: Push changes
-      uses: ad-m/github-push-action@master
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        branch: ${{ github.ref }}
+      - name: Merge files
+        run: |
+          cat sources/*.txt > email_blocklist.txt
 
+      - name: Remove duplicate lines
+        run: |
+          sort -u email_blocklist.txt > disposable_email.txt
+
+      - name: Commit changes (if any)
+        run: |
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: merge disposable email"
+
+      - name: Push changes
+        run: |
+          git push
