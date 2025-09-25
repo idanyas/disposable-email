@@ -20,7 +20,7 @@ jobs:
           echo "sources/" >> .gitignore
           echo "email_blocklist.txt" >> .gitignore
 
-      - name: Download domains list
+      - name: Download toxic domains list
         run: |
           mkdir -p sources
           curl -L -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
@@ -29,12 +29,10 @@ jobs:
           curl -L -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt
 
       - name: Merge files
-        run: |
-          cat sources/*.txt > email_blocklist.txt
+        run: cat sources/*.txt > email_blocklist.txt
 
       - name: Remove duplicate lines
-        run: |
-          sort -u email_blocklist.txt > disposable_email.txt
+        run: sort -u email_blocklist.txt > disposable_email.txt
 
       - name: Commit changes if any
         run: |
@@ -44,5 +42,4 @@ jobs:
           git diff --cached --quiet || git commit -m "chore: merge disposable email"
 
       - name: Push changes
-        run: |
-          git push
+        run: git push
