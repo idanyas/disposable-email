@@ -20,7 +20,7 @@ jobs:
           echo "sources/" >> .gitignore
           echo "email_blocklist.txt" >> .gitignore
 
-      - name: Download toxic domains list
+      - name: Download lists
         run: |
           mkdir -p sources
           curl -L -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
