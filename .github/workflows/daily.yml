@@ -13,7 +13,12 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4  # Updated to v4
+
+    - name: Configure Git
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
 
     - name: Download domains list
       run: |
@@ -23,28 +28,38 @@ jobs:
         curl -fsS -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt || echo "blocklist 2 download failed"
         curl -fsS -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt || echo "blocklist 3 download failed"
 
-    - name: Merge files
+    - name: Merge and process files
       run: |
-        cat sources/*.txt > email_blocklist.txt
+        # Merge all source files into a temporary file
+        cat sources/*.txt > temp_blocklist.txt
+        # Remove duplicates and create final file
+        sort temp_blocklist.txt | uniq > disposable_email.txt
+        # Clean up temporary file
+        rm temp_blocklist.txt
 
-    - name: Remove duplicate lines
+    - name: Check for changes and commit
       run: |
-        sort email_blocklist.txt | uniq > disposable_email.txt
-
-    - name: Commit disposable_email.txt only
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
+        # Add the final file to staging
         git add disposable_email.txt
-        # check if staged changes exist
+        
+        # Check if there are staged changes
         if git diff --cached --quiet; then
           echo "No changes to commit"
+          echo "CHANGES_EXIST=false" >> $GITHUB_ENV
         else
-          git commit -m "chore: merge disposable email"
+          echo "Changes detected, committing..."
+          git commit -m "chore: update disposable email blocklist $(date +'%Y-%m-%d')"
+          echo "CHANGES_EXIST=true" >> $GITHUB_ENV
         fi
 
     - name: Push changes
-      uses: ad-m/github-push-action@v0.6.0
+      if: env.CHANGES_EXIST == 'true'
+      uses: ad-m/github-push-action@v0.8.0  # Updated to latest version
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
+
+    - name: Clean up sources directory
+      run: |
+        # Remove the sources directory to keep repository clean
+        rm -rf sources
