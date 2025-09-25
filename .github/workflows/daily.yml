@@ -1,52 +1,49 @@
-name: Merge Disposable Email Blocklist
+# This is a basic workflow to help you get started with Actions
+name: Merge Disposable Email Domains Blocklist from Public Sources
 
+# Controls when the workflow will run
 on:
   schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch: 
+    - cron: '0 0 * * *' # Runs every day at midnight UTC
+  workflow_dispatch: # Allows manual triggering of the workflow
 
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  # This workflow contains a one job
   main:
     runs-on: ubuntu-latest
+    # Job-level permissions configuration starts here
     permissions:                
-      contents: write           
+      contents: write           # 'write' access to repository contents
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v2
 
-    - name: Download domains list
+    - name: Download toxic domains list
       run: |
-        mkdir -p sources
-        curl -fsS -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt || echo "stopforumspam download failed"
-        curl -fsS -o sources/disposable_email_blocklist.txt https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf || echo "blocklist 1 download failed"
-        curl -fsS -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt || echo "blocklist 2 download failed"
-        curl -fsS -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt || echo "blocklist 3 download failed"
+        mkdir sources
+        curl -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
+        curl -o sources/disposable_email_blocklist.txt https://raw.githubusercontent.com/disposable-email-domains/disposable-email-domains/master/disposable_email_blocklist.conf
+        curl -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt
+        curl -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt
 
     - name: Merge files
       run: |
-        cat sources/*.txt > email_blocklist.txt
-
+        cat sources/*.txt > daily_email_blocklist.txt
+  
     - name: Remove duplicate lines
       run: |
-        sort email_blocklist.txt | uniq > disposable_email.txt
+        sort daily_email_blocklist.txt | uniq > disposable_email_domains_blocklist.txt
 
-    - name: Commit disposable_email.txt only
+    - name: Commit changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add disposable_email.txt
-        # Clean up temporary files before checking for changes
-        rm -rf sources/ email_blocklist.txt
-        # check if staged changes exist
-        if git diff --cached --quiet; then
-          echo "No changes to commit"
-        else
-          git commit -m "chore: merge disposable email"
-        fi
-
+        git add disposable_email_domains_blocklist.txt
+        git commit -m 'Daily merge of disposable email sources'
     - name: Push changes
-      uses: ad-m/github-push-action@v0.6.0
+      uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
