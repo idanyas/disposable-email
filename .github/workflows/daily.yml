@@ -13,12 +13,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4  # Updated to v4
-
-    - name: Configure Git
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
+      uses: actions/checkout@v3
 
     - name: Download domains list
       run: |
@@ -28,38 +23,30 @@ jobs:
         curl -fsS -o sources/disposable_email_blocklist-2.txt https://disposable.github.io/disposable-email-domains/domains.txt || echo "blocklist 2 download failed"
         curl -fsS -o sources/disposable_email_blocklist-3.txt https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt || echo "blocklist 3 download failed"
 
-    - name: Merge and process files
+    - name: Merge files
       run: |
-        # Merge all source files into a temporary file
-        cat sources/*.txt > temp_blocklist.txt
-        # Remove duplicates and create final file
-        sort temp_blocklist.txt | uniq > disposable_email.txt
-        # Clean up temporary file
-        rm temp_blocklist.txt
+        cat sources/*.txt > email_blocklist.txt
 
-    - name: Check for changes and commit
+    - name: Remove duplicate lines
       run: |
-        # Add the final file to staging
+        sort email_blocklist.txt | uniq > disposable_email.txt
+
+    - name: Commit disposable_email.txt only
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
         git add disposable_email.txt
-        
-        # Check if there are staged changes
+        # Clean up temporary files before checking for changes
+        rm -rf sources/ email_blocklist.txt
+        # check if staged changes exist
         if git diff --cached --quiet; then
           echo "No changes to commit"
-          echo "CHANGES_EXIST=false" >> $GITHUB_ENV
         else
-          echo "Changes detected, committing..."
-          git commit -m "chore: update disposable email blocklist $(date +'%Y-%m-%d')"
-          echo "CHANGES_EXIST=true" >> $GITHUB_ENV
+          git commit -m "chore: merge disposable email"
         fi
 
     - name: Push changes
-      if: env.CHANGES_EXIST == 'true'
-      uses: ad-m/github-push-action@v0.8.0  # Updated to latest version
+      uses: ad-m/github-push-action@v0.6.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ github.ref }}
-
-    - name: Clean up sources directory
-      run: |
-        # Remove the sources directory to keep repository clean
-        rm -rf sources
