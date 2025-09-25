@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3  # latest stable version
+      uses: actions/checkout@v3
 
     - name: Download domains list
       run: |
@@ -31,17 +31,17 @@ jobs:
       run: |
         sort email_blocklist.txt | uniq > disposable_email.txt
 
-    - name: Commit changes
+    - name: Commit disposable_email.txt only
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add disposable_email.txt
+        # check if staged changes exist
         if git diff --cached --quiet; then
           echo "No changes to commit"
         else
           git commit -m "chore: merge disposable email"
         fi
-
 
     - name: Push changes
       uses: ad-m/github-push-action@v0.6.0
