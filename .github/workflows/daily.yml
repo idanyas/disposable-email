@@ -1,5 +1,5 @@
-# This is a basic workflow to help you get started with Actions
-name: Merge Disposable Email Domains Blocklist from Public Sources
+
+name: Merge Disposable Email Domains Blocklist
 
 # Controls when the workflow will run
 on:
@@ -7,7 +7,7 @@ on:
     - cron: '0 0 * * *' # Runs every day at midnight UTC
   workflow_dispatch: # Allows manual triggering of the workflow
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
 jobs:
   # This workflow contains a one job
   main:
@@ -20,7 +20,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Download toxic domains list
+    - name: Download domains
       run: |
         mkdir sources
         curl -o sources/stopforumspam_domains.txt https://www.stopforumspam.com/downloads/toxic_domains_whole.txt
@@ -34,14 +34,14 @@ jobs:
   
     - name: Remove duplicate lines
       run: |
-        sort daily_email_blocklist.txt | uniq > disposable_email_domains_blocklist.txt
+        sort daily_email_blocklist.txt | uniq > disposable_email.txt
 
     - name: Commit changes
       run: |
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add disposable_email_domains_blocklist.txt
-        git commit -m 'Daily merge of disposable email sources'
+        git add disposable_email.txt
+        git commit -m 'chore:Daily merge of disposable email'
         git pull --rebase origin main
     - name: Push changes
       uses: ad-m/github-push-action@master
