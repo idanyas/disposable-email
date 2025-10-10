@@ -41,7 +41,7 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add disposable_email.txt
-        git commit -m 'chore:Daily merge of disposable email'
+        git commit -m 'chore:daily merge of disposable email'
         git pull --rebase origin main
     - name: Push changes
       uses: ad-m/github-push-action@master
